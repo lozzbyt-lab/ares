@@ -1,0 +1,42 @@
+
+pipeline {
+    agent any
+    
+    environment {
+        VENV_DIR = "${WORKSPACE}/venv"
+    }
+    
+    stages {
+        stage('Pull Source Code') {
+            steps {
+                // Ensure this matches your repository path structure
+                git branch: 'main', url: 'https://github.com/lozzbyt-lab/ares.git'
+            }
+        }
+        
+        stage('Install Python Dependencies') {
+            steps {
+                sh '''
+                    python3 -m venv $VENV_DIR
+                    . $VENV_DIR/bin/activate
+                    pip install --upgrade pip
+                    
+                    # Use the workspace relative path to backend directory
+                    pip install -r backend/requirements.txt
+                '''
+            }
+        }
+        
+        stage('Deploy & Restart systemd') {
+            steps {
+                // Restarts the backend service securely via sudo
+                sh 'sudo systemctl restart backend.service'
+            }
+        }   
+       stage('Health Check Verify') {
+            steps {
+                sh 'sudo systemctl is-active backend.service'
+            }
+        }
+    }
+}
