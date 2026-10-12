@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+    
+    tools {
+        nodejs 'nodejs_21'
+    }
+    
+    stages {
+        stage('Pull Source Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/lozzbyt-lab/ares.git'
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                // Navigate into the subfolder where package.json actually exists
+                dir('ares/frontend') { 
+                    sh 'npm install'
+                }
+            }
+        }
+        
+        stage('Deploy & Restart systemd') {
+            steps {
+                sh 'sudo systemctl restart frontend.service'
+            }
+        }
+        
+        stage('Health Check Verify') {
+            steps {
+                sh 'sudo systemctl is-active frontend.service'
+            }
+        }
+    }
+}
+
